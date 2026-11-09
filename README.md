@@ -25,7 +25,7 @@ A collection of mobile robotics projects developed during an engineering interns
 
 This repository documents three Arduino robotics projects built using the **Arduino UNO** and the **L293D dual H-bridge motor driver**:
 
-1. **Object Following Robot:** Detects obstacles and maintains a following distance using an HC-SR04 ultrasonic distance sensor.
+1. **Object Following Robot:** Detects an object ahead and moves forward within a configured 8–20 cm range using an HC-SR04 ultrasonic sensor.
 2. **Bluetooth Controlled Robot:** Teleoperated over wireless serial communication via an HC-05 module with differential rotation.
 3. **Timer Controlled Robot:** Executes an autonomous, predetermined 5-phase movement sequence using time-based delays.
 
@@ -59,7 +59,7 @@ All three robots share the same fundamental embedded hardware platform:
 | Component | Specification | Function |
 | :--- | :--- | :--- |
 | **Arduino UNO** | Microchip ATmega328P microcontroller (16 MHz, 5V logic) | Central processing and I/O controller |
-| **L293D Motor Driver** | Dual H-bridge driver IC / board | Drives two DC motors with bidirectional control |
+| **L293D Motor Driver** | Dual H-bridge motor driver module | Drives two DC motors with bidirectional control |
 | **DC Gear Motors** | 2 × BO geared DC motors | Left and right drive wheels (differential locomotion) |
 | **Chassis** | 2-wheel drive chassis + 1 passive caster wheel | Physical robotics chassis |
 | **Power Supply** | Battery pack | DC power source for microcontroller and motors |
@@ -96,7 +96,7 @@ The table below outlines the exact pin assignments defined in each project's sou
 ### 1. Object Following Robot
 
 * **Source File:** [`object-following-robot.ino`](./object-following-robot/object-following-robot.ino)
-* **Objective:** Maintain a configured distance range behind an object detected along the forward path using ultrasonic acoustic ranging.
+* **Objective:** Detects an object using an ultrasonic sensor and moves forward when the object is within the configured following range of 8–20 cm. The robot stops when the object is too close, too far, or no valid distance reading is obtained.
 
 #### Hardware Components
 * Arduino UNO
@@ -110,7 +110,7 @@ The table below outlines the exact pin assignments defined in each project's sou
 | Subsystem | Signal Name | Arduino Uno Pin | Description |
 | :--- | :--- | :--- | :--- |
 | **HC-SR04 Sensor** | `TRIG_PIN` | **D2** | Ultrasonic pulse trigger output |
-| **HC-SR04 Sensor** | `ECHO_PIN` | **D3** | Ultrasonic echo pulse input capture |
+| **HC-SR04 Sensor** | `ECHO_PIN` | **D3** | Ultrasonic echo pulse measurement |
 | **L293D Left Motor** | `IN1` | **D6** | Left motor direction input 1 |
 | **L293D Left Motor** | `IN2` | **D7** | Left motor direction input 2 |
 | **L293D Right Motor**| `IN3` | **D10** | Right motor direction input 1 |
@@ -118,7 +118,7 @@ The table below outlines the exact pin assignments defined in each project's sou
 
 #### Working Principle & Distance Calculation
 
-The robot measures distance to the nearest target object using the speed of sound:
+The robot measures distance to the detected object ahead using the speed of sound:
 1. Arduino issues a 10 µs pulse on `TRIG_PIN` (preceded by a 2 µs baseline low).
 2. The width of the return echo pulse is measured on `ECHO_PIN` using `pulseIn()` with a 30,000 µs cutoff.
 3. Distance in centimeters is calculated using the standard time-of-flight acoustic equation:
@@ -150,7 +150,6 @@ The robot measures distance to the nearest target object using the speed of soun
 * L293D Motor Driver
 * HC-05 Bluetooth Module
 * 2 × DC Gear Motors + Chassis
-* Resistor voltage divider (for 5V to 3.3V logic level shifting)
 * Battery power source
 
 #### Exact Pin Connections (from Source Code)
@@ -158,7 +157,7 @@ The robot measures distance to the nearest target object using the speed of soun
 | Subsystem | Signal Name | Arduino Uno Pin | Description |
 | :--- | :--- | :--- | :--- |
 | **HC-05 Bluetooth** | `SoftwareSerial RX` | **D2** | Connected to HC-05 TXD (receives commands) |
-| **HC-05 Bluetooth** | `SoftwareSerial TX` | **D3** | Connected to HC-05 RXD via resistor voltage divider |
+| **HC-05 Bluetooth** | `SoftwareSerial TX` | **D3** | Connected directly to HC-05 RXD |
 | **L293D Left Motor** | `ENA` | **D5** | Left motor speed control (PWM, `SPEED = 255`) |
 | **L293D Left Motor** | `IN1` | **D8** | Left motor direction input 1 |
 | **L293D Left Motor** | `IN2` | **D9** | Left motor direction input 2 |
@@ -166,7 +165,7 @@ The robot measures distance to the nearest target object using the speed of soun
 | **L293D Right Motor**| `IN3` | **D10** | Right motor direction input 1 |
 | **L293D Right Motor**| `IN4` | **D11** | Right motor direction input 2 |
 
-> **Signal Level Shifting:** The HC-05 RXD pin accepts 3.3V logic. Connecting Arduino pin D3 (5V) through a resistor voltage divider steps down the transmit signal to protect the module.
+> **Wiring Note:** The HC-05 Bluetooth module pins are connected directly to the Arduino UNO without an external resistor network.
 
 #### Working Principle & Command Protocol
 
@@ -176,14 +175,14 @@ The firmware creates a software UART port using `SoftwareSerial BT(2, 3)` runnin
 | :---: | :--- | :--- | :--- | :--- |
 | **`F` / `f`** | Forward | `255, HIGH, LOW` | `255, HIGH, LOW` | Both motors drive forward at full speed |
 | **`B` / `b`** | Backward | `255, LOW, HIGH` | `255, LOW, HIGH` | Both motors drive in reverse at full speed |
-| **`L` / `l`** | Turn Left | `0, LOW, LOW` | Active in `lastDirection` | Left motor stops; right motor continues running |
-| **`R` / `r`** | Turn Right | Active in `lastDirection` | `0, LOW, LOW` | Right motor stops; left motor continues running |
+| **`L` / `l`** | Turn Left | `0, LOW, LOW` | Runs in `lastDirection` | Left motor stops; right motor continues in previous direction (`'F'` or `'B'`) |
+| **`R` / `r`** | Turn Right | Runs in `lastDirection` | `0, LOW, LOW` | Right motor stops; left motor continues in previous direction (`'F'` or `'B'`) |
 | **`S` / `s`** | Stop | `0, LOW, LOW` | `0, LOW, LOW` | All motor drive signals disabled |
 
 #### Steering Kinematics (Intentional Design)
 * The steering system uses **single-wheel differential pivot turns**: sending **`L`** or **`R`** stops the inner motor while the outer motor continues running in the direction established by `lastDirection` (`'F'` or `'B'`).
 * If the robot was in a stopped state (`lastDirection == 'S'`), steering commands will not initiate rotation.
-* Sending a turn command re-orients the vehicle in place; pressing **`F`** separately is required to drive forward in the new direction. This is intentional operational design, not a malfunction.
+* The robot pivots around its stationary wheel. A separate forward command is required to move in the newly selected direction.
 
 ---
 
@@ -211,7 +210,7 @@ The firmware creates a software UART port using `SoftwareSerial BT(2, 3)` runnin
 
 #### Working Principle & Sequence Execution
 
-The robot operates as an open-loop state machine using blocking delays (`delay(5000)`). Locomotion is handled by `moveBot(left1, left2, right1, right2)` with full PWM (`SPEED = 255`) and `stopBot()`.
+The robot executes a sequential time-based routine using blocking delays (`delay(5000)`). Locomotion is handled by `moveBot(left1, left2, right1, right2)` with full PWM (`SPEED = 255`) and `stopBot()`.
 
 The main loop continuously repeats the following **25-second cycle** (5 seconds per phase):
 
@@ -235,7 +234,7 @@ Phase 5: Right Spin Turn (5.0s)
 | :---: | :--- | :---: | :--- | :--- | :--- |
 | **1** | Backward | 5.0 s | `LOW, HIGH` (Reverse) | `LOW, HIGH` (Reverse) | Straight reverse motion |
 | **2** | Forward | 5.0 s | `HIGH, LOW` (Forward) | `HIGH, LOW` (Forward) | Straight forward motion |
-| **3** | Stop | 5.0 s | `ENA = 0` | `ENB = 0` | Full motor brake / halt |
+| **3** | Stop | 5.0 s | `ENA = 0` | `ENB = 0` | Motor outputs disabled |
 | **4** | Left Turn | 5.0 s | `LOW, HIGH` (Reverse) | `HIGH, LOW` (Forward) | Dual-wheel zero-radius spin turn CCW |
 | **5** | Right Turn | 5.0 s | `HIGH, LOW` (Forward) | `LOW, HIGH` (Reverse) | Dual-wheel zero-radius spin turn CW |
 
@@ -260,17 +259,17 @@ Phase 5: Right Spin Turn (5.0s)
 
 ## Skills Gained
 
-* **Microcontroller I/O Interfacing:** Mapping discrete GPIOs and hardware PWM lines across distinct robotic hardware configurations.
+* **Microcontroller I/O Interfacing:** Configuring digital GPIO switching (used in the Object Following robot) and hardware PWM speed control (used in the Bluetooth and Timer robots).
 * **DC Motor Control:** Implementing bidirectional H-bridge control logic for forward, reverse, differential pivot, and dual-wheel spin maneuvers.
-* **Signal Level Conditioning:** Applying a resistor voltage divider to step down 5V microcontroller logic to 3.3V for transceiver protection.
-* **Serial Telemetry:** Parsing incoming UART serial commands using `SoftwareSerial` to control actuators in real time.
+* **Serial Communication and Command Parsing:** Parsing incoming single-character UART control commands using `SoftwareSerial` to control actuators in real time.
 * **Time-of-Flight Ranging:** Converting microsecond acoustic echo pulse widths to metric distance measurements.
 
 ---
 
 ## Future Improvements
 
-* **Non-Blocking Architecture:** Replace blocking delays (`delay()` and `pulseIn()`) with non-blocking timing routines using `millis()` to allow concurrent execution.
+* **Non-Blocking Architecture:** Replace blocking `delay()` calls with non-blocking timing using `millis()` to allow concurrent task handling.
+* **Interrupt-Based Ultrasonic Measurement:** Replace blocking `pulseIn()` calls with external pin-change interrupts to measure echo pulse durations asynchronously.
 * **Closed-Loop Wheel Odometry:** Add optical wheel encoders to measure real-time wheel speed and correct mechanical drift during straight-line travel.
 * **Proportional Distance Regulation:** Implement proportional control on the Object Follower to smoothly scale motor speed as the distance to the target changes.
 * **Communication Watchdog:** Add an automatic stop timeout on the Bluetooth robot to halt motion if no keep-alive signal is received within a set duration.
