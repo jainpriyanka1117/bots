@@ -38,13 +38,13 @@ bots/
 │
 ├── README.md
 │
-├── Object-Following-Robot/
+├── object-following-robot/
 │   └── object-following-robot.ino
 │
-├── Bluetooth-Controlled-Robot/
+├── bluetooth-robot/
 │   └── bluetooth-robot.ino
 │
-└── Timer-Controlled-Robot/
+└── timer-robot/
     └── timer-robot.ino
 ```
 
@@ -95,7 +95,7 @@ The table below outlines the exact pin assignments defined in each project's sou
 
 ### 1. Object Following Robot
 
-* **Source File:** [`object-following-robot.ino`](./Object-Following-Robot/object-following-robot.ino)
+* **Source File:** [`object-following-robot.ino`](./object-following-robot/object-following-robot.ino)
 * **Objective:** Maintain a configured distance range behind an object detected along the forward path using ultrasonic acoustic ranging.
 
 #### Hardware Components
@@ -142,7 +142,7 @@ The robot measures distance to the nearest target object using the speed of soun
 
 ### 2. Bluetooth Controlled Robot
 
-* **Source File:** [`bluetooth-robot.ino`](./Bluetooth-Controlled-Robot/bluetooth-robot.ino)
+* **Source File:** [`bluetooth-robot.ino`](./bluetooth-robot/bluetooth-robot.ino)
 * **Objective:** Remotely teleoperate vehicle translation and directional orientation wirelessly using single-character commands transmitted over Bluetooth.
 
 #### Hardware Components
@@ -189,7 +189,7 @@ The firmware creates a software UART port using `SoftwareSerial BT(2, 3)` runnin
 
 ### 3. Timer Controlled Robot
 
-* **Source File:** [`timer-robot.ino`](./Timer-Controlled-Robot/timer-robot.ino)
+* **Source File:** [`timer-robot.ino`](./timer-robot/timer-robot.ino)
 * **Objective:** Execute an autonomous, repeatable 5-phase movement routine based strictly on predetermined time delays.
 
 #### Hardware Components
