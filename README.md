@@ -1,6 +1,6 @@
 # Arduino Robotics Projects
 
-A collection of mobile robotics projects developed during an engineering internship at **Robokart**. This repository contains modular Arduino implementations for an ultrasonic distance-tracking robot, a Bluetooth-controlled teleoperated robot, and an autonomous timer-controlled robot using two-wheel differential drive platforms.
+A comprehensive engineering portfolio of mobile robotics projects demonstrating modular Arduino firmware implementations for ultrasonic distance tracking, wireless Bluetooth serial control, and time-based autonomous routines on two-wheel differential drive platforms.
 
 ---
 
