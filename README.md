@@ -1,6 +1,6 @@
 # Arduino Robotics Projects
 
-A comprehensive engineering portfolio of embedded robotics firmware demonstrating modular Arduino implementations covering sensor-based closed-loop following, wireless serial teleoperation, and open-loop timed trajectory execution.
+A collection of mobile robotics projects developed during an internship at **Robokart**. This repository contains practical Arduino implementations demonstrating ultrasonic distance tracking, wireless Bluetooth serial control, and time-based autonomous routines using differential drive platforms.
 
 ---
 
@@ -9,34 +9,32 @@ A comprehensive engineering portfolio of embedded robotics firmware demonstratin
 - [Repository Overview](#repository-overview)
 - [Repository Structure](#repository-structure)
 - [Common Hardware Architecture](#common-hardware-architecture)
-  - [Shared Platform Components](#shared-platform-components)
-  - [Motor Driver Topologies & Pin Mappings](#motor-driver-topologies--pin-mappings)
-- [Project Implementations](#project-implementations)
+  - [Shared Components](#shared-components)
+  - [Standard Motor Driver Pinout](#standard-motor-driver-pinout)
+- [Project Details](#project-details)
   - [1. Object Following Robot](#1-object-following-robot)
   - [2. Bluetooth Controlled Robot](#2-bluetooth-controlled-robot)
   - [3. Timer Controlled Robot](#3-timer-controlled-robot)
-- [Comparative Technical Summary](#comparative-technical-summary)
-- [Technologies & Tools Used](#technologies--tools-used)
-- [Engineering Skills Gained](#engineering-skills-gained)
-- [Potential Future Enhancements](#potential-future-enhancements)
+- [Technologies and Tools Used](#technologies-and-tools-used)
+- [Skills Gained](#skills-gained)
+- [Future Improvements](#future-improvements)
 
 ---
 
 ## Repository Overview
 
-This repository demonstrates practical embedded software development for two-wheel differential drive mobile robots using the **Arduino UNO (ATmega328P)** microcontroller and the **L293D dual H-bridge motor driver**. 
+This repository documents three Arduino-based robotics projects built around the **Arduino UNO** and the **L293D dual H-bridge motor driver**:
 
-The three projects showcase distinct embedded control paradigms:
-1. **Sensory Closed-Loop Control:** Real-time distance tracking and threshold evaluation using ultrasonic time-of-flight measurements.
-2. **Asynchronous Teleoperation:** Wireless command parsing over software UART with state-dependent differential pivot steering.
-3. **Sequential State Execution:** Deterministic, open-loop kinematic routines executing predefined motion profiles.
+1. **Object Following Robot:** Uses an ultrasonic sensor to detect and follow an object within a designated distance range.
+2. **Bluetooth Controlled Robot:** Receives serial commands via an HC-05 Bluetooth module for directional movement and rotation.
+3. **Timer Controlled Robot:** Executes a fixed, predefined movement sequence using time-based delays.
 
 ---
 
 ## Repository Structure
 
 ```
-Robotics-Projects/
+bots/
 │
 ├── README.md
 │
@@ -54,78 +52,88 @@ Robotics-Projects/
 
 ## Common Hardware Architecture
 
-### Shared Platform Components
+### Shared Components
 
-All three mobile robots are built on a standard differential drive chassis and share core embedded hardware:
+All three robots share a common differential drive hardware foundation:
 
-| Component | Technical Specification | Function |
+| Component | Description | Purpose |
 | :--- | :--- | :--- |
-| **Microcontroller** | Arduino UNO (Microchip ATmega328P, 16 MHz, 5V logic) | Central processing unit, GPIO control, timing, and peripheral communication |
-| **Motor Driver IC** | L293D Dual H-Bridge Motor Driver | Inductive load switching; provides bidirectional DC motor current drive |
-| **Actuators** | 2 × BO DC Gear Motors (configured as Left and Right drive wheels) | Differential drive locomotion |
-| **Chassis** | 2-wheel differential chassis + 1 passive caster wheel | Physical robotic platform |
+| **Arduino UNO** | ATmega328P microcontroller board (5V logic, 16 MHz) | Main controller executing robot firmware |
+| **L293D Motor Driver** | Dual H-bridge motor driver IC / board | Drives two DC motors with bidirectional control |
+| **DC Gear Motors** | 2 × BO motors configured for differential drive | Left and right wheel propulsion |
+| **Robot Chassis** | 2-wheel drive chassis with 1 caster wheel | Mechanical robot base |
+| **Power Supply** | Battery pack | Powers microcontroller and motor driver |
 
 ---
 
-### Motor Driver Topologies & Pin Mappings
+### Standard Motor Driver Pinout
 
-The source code reveals two distinct L293D wiring topologies across these projects. They are **not** identical:
+All three robots share the same physical L293D motor driver connections on the Arduino UNO chassis:
 
-* **Topology 1 (Dedicated PWM Speed Enable):** Used by both the [Bluetooth Controlled Robot](./Bluetooth-Controlled-Robot/bluetooth-robot.ino) and the [Timer Controlled Robot](./Timer-Controlled-Robot/timer-robot.ino). Hardware PWM pins drive the L293D enable inputs (`ENA`, `ENB`), and digital pins drive the H-bridge direction logic (`IN1`–`IN4`).
-* **Topology 2 (Direct Direction Drive):** Used by the [Object Following Robot](./Object-Following-Robot/object-following-robot.ino). Direction logic pins (`IN1`–`IN4`) connect directly to microcontroller digital pins; driver enable pins are tied to 5V (logic HIGH) in hardware, running motors at a fixed duty cycle.
-
-#### Genuine Shared Pinout (Bluetooth & Timer Robots):
-
-| L293D Pin | Arduino Uno Pin | Pin Type | Assigned Motor Function |
+| L293D Pin | Arduino Uno Pin | Pin Type | Assigned Function |
 | :--- | :--- | :--- | :--- |
-| **ENA** | **D5** | Hardware PWM | Left Motor Speed Enable |
-| **IN1** | **D8** | Digital Output | Left Motor Direction Input 1 |
-| **IN2** | **D9** | Digital Output | Left Motor Direction Input 2 |
-| **ENB** | **D6** | Hardware PWM | Right Motor Speed Enable |
-| **IN3** | **D10** | Digital Output | Right Motor Direction Input 1 |
-| **IN4** | **D11** | Digital Output | Right Motor Direction Input 2 |
+| **ENA** | **D5** | Hardware PWM | Left motor speed control |
+| **IN1** | **D8** | Digital Output | Left motor direction input 1 |
+| **IN2** | **D9** | Digital Output | Left motor direction input 2 |
+| **ENB** | **D6** | Hardware PWM | Right motor speed control |
+| **IN3** | **D10** | Digital Output | Right motor direction input 1 |
+| **IN4** | **D11** | Digital Output | Right motor direction input 2 |
 
 ---
 
-## Project Implementations
+## Project Details
 
 ### 1. Object Following Robot
 
 * **Source File:** [`object-following-robot.ino`](./Object-Following-Robot/object-following-robot.ino)
-* **Objective:** Maintain a target distance behind a moving object within a longitudinal threshold window using real-time ultrasonic ranging.
+* **Objective:** Track an object in front of the robot and move forward to maintain distance, stopping when the object is too close or out of range.
 
-#### Hardware & Wiring
+#### Components
+* Arduino UNO
+* L293D Motor Driver
+* HC-SR04 Ultrasonic Distance Sensor
+* 2 × DC Gear Motors + Chassis
 
-| Subsystem | Signal Name | Arduino Uno Pin | Description |
+#### Confirmed Physical Connections
+
+| Subsystem | Signal / Pin | Arduino Uno Pin | Description |
 | :--- | :--- | :--- | :--- |
-| **HC-SR04 Sensor** | `TRIG_PIN` | **D2** | $10\,\mu\text{s}$ ultrasonic pulse trigger |
-| **HC-SR04 Sensor** | `ECHO_PIN` | **D3** | Ultrasonic echo pulse input capture |
-| **L293D Motor Driver** | `IN1` | **D6** | Left Motor Driver Input 1 |
-| **L293D Motor Driver** | `IN2` | **D7** | Left Motor Driver Input 2 |
-| **L293D Motor Driver** | `IN3` | **D10** | Right Motor Driver Input 1 |
-| **L293D Motor Driver** | `IN4` | **D11** | Right Motor Driver Input 2 |
-| **L293D Enable** | `ENA`, `ENB` | *Hardwired* | Connected to 5V for continuous full-speed operation |
+| **HC-SR04 Sensor** | Trig | **D2** | Sends 10 µs trigger pulse |
+| **HC-SR04 Sensor** | Echo | **D3** | Receives echo return pulse |
+| **L293D Left Motor** | ENA | **D5** | Hardware PWM speed enable |
+| **L293D Left Motor** | IN1 | **D8** | Direction input 1 |
+| **L293D Left Motor** | IN2 | **D9** | Direction input 2 |
+| **L293D Right Motor**| ENB | **D6** | Hardware PWM speed enable |
+| **L293D Right Motor**| IN3 | **D10** | Direction input 1 |
+| **L293D Right Motor**| IN4 | **D11** | Direction input 2 |
+
+> [!WARNING]
+> **Hardware-to-Software Pin Mismatch (Flagged for Review):**
+> * **Physical Wiring:** Wired to `ENA = D5`, `IN1 = D8`, `IN2 = D9`, `ENB = D6`, `IN3 = D10`, `IN4 = D11`.
+> * **Current Source Code:** The existing sketch [`object-following-robot.ino`](./Object-Following-Robot/object-following-robot.ino) currently defines `IN1 = 6`, `IN2 = 7`, `IN3 = 10`, `IN4 = 11`, and does not initialize or control `ENA` and `ENB`.
+> * **Action Required:** To run this firmware on the physical chassis without rewiring, the code's `#define` assignments should be updated to match the confirmed physical pins, and PWM control for `ENA`/`ENB` should be added in `setup()` and motor functions.
 
 #### Working Principle & Control Logic
 
-The firmware interfaces an **HC-SR04 ultrasonic sensor** operating on time-of-flight acoustic measurement:
-1. A $10\,\mu\text{s}$ pulse is transmitted on `TRIG_PIN` after a $2\,\mu\text{s}$ low baseline.
-2. The width of the return pulse on `ECHO_PIN` is measured using `pulseIn()` with a $30{,}000\,\mu\text{s}$ timeout ($\approx 5.1\,\text{m}$ theoretical cutoff).
-3. Distance in centimeters is calculated using the speed of sound in dry air ($\approx 340\,\text{m/s}$ or $0.034\,\text{cm}/\mu\text{s}$):
+The robot calculates distance using the time-of-flight of ultrasonic sound waves emitted by the HC-SR04:
+1. Arduino sends a 10 µs pulse on `TRIG_PIN` (preceded by a 2 µs low pulse).
+2. The duration of the reflected echo pulse is measured on `ECHO_PIN` using `pulseIn()` with a 30,000 µs timeout.
+3. Distance in centimeters is calculated using the speed of sound:
    $$\text{Distance (cm)} = \frac{\text{duration} \times 0.034}{2}$$
-4. Distance data is logged to the serial terminal at 9600 baud and evaluated against configured operational limits:
+4. The robot evaluates the distance against defined thresholds:
    * `STOP_DISTANCE = 8 cm`
    * `FOLLOW_DISTANCE = 20 cm`
 
-#### Decision Table:
-| Measured Distance ($d$) | Vehicle Response | Motor States (`IN1, IN2, IN3, IN4`) | Rationale |
-| :--- | :--- | :--- | :--- |
-| $d == 0\,\text{cm}$ | **Stop** | `LOW, LOW, LOW, LOW` | Timeout or out-of-range; failsafe stop |
-| $d \le 8\,\text{cm}$ | **Stop** | `LOW, LOW, LOW, LOW` | Minimum safety buffer reached; prevents collision |
-| $8\,\text{cm} < d \le 20\,\text{cm}$ | **Forward** | `HIGH, LOW, HIGH, LOW` | Target within tracking range; advance toward object |
-| $d > 20\,\text{cm}$ | **Stop** | `LOW, LOW, LOW, LOW` | Target exceeds follow threshold; halt locomotion |
+#### Decision Table
 
-> **Implementation Note:** The firmware implements a 1-dimensional longitudinal tracking algorithm. It does not execute lateral steering or reverse tracking.
+| Measured Distance ($d$) | Robot Action | Motor Logic (`IN1, IN2, IN3, IN4`) | Reason |
+| :--- | :--- | :--- | :--- |
+| **$d == 0\,\text{cm}$** | **Stop** | `LOW, LOW, LOW, LOW` | Sensor timeout or out of range |
+| **$d \le 8\,\text{cm}$** | **Stop** | `LOW, LOW, LOW, LOW` | Object too close (safety margin) |
+| **$8\,\text{cm} < d \le 20\,\text{cm}$** | **Forward** | `HIGH, LOW, HIGH, LOW` | Object detected in follow range |
+| **$d > 20\,\text{cm}$** | **Stop** | `LOW, LOW, LOW, LOW` | Object exceeds follow range |
+
+*Note: The code implements forward following and stopping. It does not perform reverse tracking or lateral steering.*
 
 ---
 
@@ -134,121 +142,116 @@ The firmware interfaces an **HC-SR04 ultrasonic sensor** operating on time-of-fl
 * **Source File:** [`bluetooth-robot.ino`](./Bluetooth-Controlled-Robot/bluetooth-robot.ino)
 * **Objective:** Teleoperate vehicle translation and directional orientation wirelessly via serial commands transmitted from a paired Bluetooth device.
 
-#### Hardware & Wiring
+#### Components
+* Arduino UNO
+* L293D Motor Driver
+* HC-05 Bluetooth Module
+* 2 × DC Gear Motors + Chassis
+* Resistors for voltage divider (5V to 3.3V)
 
-*Motor driver connections follow the [Genuine Shared Pinout](#genuine-shared-pinout-bluetooth--timer-robots).*
+#### Pin Connections
 
-| Subsystem | Signal Name | Arduino Uno Pin | Description |
+*Motor driver connections follow the [Standard Motor Driver Pinout](#standard-motor-driver-pinout) (`ENA=D5, IN1=D8, IN2=D9, ENB=D6, IN3=D10, IN4=D11`).*
+
+| Module | Module Pin | Arduino Uno Pin | Description |
 | :--- | :--- | :--- | :--- |
-| **HC-05 Bluetooth** | `SoftwareSerial RX` | **D2** | Connected to HC-05 TXD (receives command stream) |
-| **HC-05 Bluetooth** | `SoftwareSerial TX` | **D3** | Connected to HC-05 RXD via resistive voltage divider ($5\text{V} \rightarrow 3.3\text{V}$) |
+| **HC-05 Bluetooth** | TXD | **D2** | Arduino SoftwareSerial RX (receives serial data) |
+| **HC-05 Bluetooth** | RXD | **D3** | Arduino SoftwareSerial TX (via voltage divider) |
 
-> **Hardware Detail:** The HC-05 UART RX pin operates at 3.3V logic. Connecting Arduino D3 (5V logic) through a voltage divider protects the HC-05 transceiver from overvoltage stress.
+> **Note on Voltage Divider:** The HC-05 RXD pin uses 3.3V logic. A resistor voltage divider is placed between Arduino pin D3 (5V) and HC-05 RXD to safely step down the voltage.
 
 #### Working Principle & Command Protocol
 
-The firmware instantiates a secondary UART port via `SoftwareSerial BT(2, 3)` operating at 9600 baud. Incoming ASCII characters are polled in the main loop and processed via a `switch-case` state handler:
+The robot uses the `SoftwareSerial` library on pins 2 and 3 at 9600 baud to read incoming single-character ASCII commands:
 
-| Command Byte | Action | State Update | Left Motor (`ENA, IN1, IN2`) | Right Motor (`ENB, IN3, IN4`) | Kinematic Behavior |
-| :---: | :--- | :--- | :--- | :--- | :--- |
-| `'F'` / `'f'` | Forward | `lastDirection = 'F'` | `255, HIGH, LOW` | `255, HIGH, LOW` | Both wheels rotate forward at 100% duty cycle |
-| `'B'` / `'b'` | Backward | `lastDirection = 'B'` | `255, LOW, HIGH` | `255, LOW, HIGH` | Both wheels rotate reverse at 100% duty cycle |
-| `'L'` / `'l'` | Turn Left | *Unchanged* | `0, LOW, LOW` | Active in `lastDirection` | Differential pivot: Left wheel stopped; right wheel drives |
-| `'R'` / `'r'` | Turn Right | *Unchanged* | Active in `lastDirection` | `0, LOW, LOW` | Differential pivot: Right wheel stopped; left wheel drives |
-| `'S'` / `'s'` | Stop | `lastDirection = 'S'` | `0, LOW, LOW` | `0, LOW, LOW` | All drives deactivated; motors coast/brake |
+| Command | Action | Left Motor (`ENA, IN1, IN2`) | Right Motor (`ENB, IN3, IN4`) | Behavior |
+| :---: | :--- | :--- | :--- | :--- |
+| **`F` / `f`** | Forward | `255, HIGH, LOW` | `255, HIGH, LOW` | Both motors drive forward |
+| **`B` / `b`** | Backward | `255, LOW, HIGH` | `255, LOW, HIGH` | Both motors drive backward |
+| **`L` / `l`** | Turn Left | `0, LOW, LOW` | Continues in `lastDirection` | Left motor stops; right motor continues in `lastDirection` |
+| **`R` / `r`** | Turn Right | Continues in `lastDirection` | `0, LOW, LOW` | Right motor stops; left motor continues in `lastDirection` |
+| **`S` / `s`** | Stop | `0, LOW, LOW` | `0, LOW, LOW` | Both motors stop completely |
 
-#### Steering Kinematics (Intentional Design)
-The steering logic utilizes **single-wheel differential pivot turns** referencing the vehicle's last translational state (`lastDirection`):
-* When turning (`'L'` or `'R'`), the inside wheel is completely halted (`PWM = 0`), and the outside wheel continues driving according to `lastDirection` (`'F'` or `'B'`).
-* If the robot is currently stopped (`lastDirection == 'S'`), steering commands will not initiate rotation.
-* Sending `'L'` or `'R'` re-orients the chassis; a subsequent `'F'` command must be sent to drive forward along the new heading. This decoupled orient-then-translate control is intentional.
+#### Steering Control Behavior (Intentional Design)
+* Sending **`L`** or **`R`** stops the inner motor and keeps the outer motor running in the current direction (`lastDirection`), causing the robot to rotate and adjust its heading.
+* If the robot was stopped (`'S'`), sending `'L'` or `'R'` does not initiate rotation.
+* To move forward in the new direction after turning, the user sends a separate **`F`** command. This decoupled orient-then-drive behavior is intentional.
 
 ---
 
 ### 3. Timer Controlled Robot
 
 * **Source File:** [`timer-robot.ino`](./Timer-Controlled-Robot/timer-robot.ino)
-* **Objective:** Execute an autonomous, repeatable 5-phase motion trajectory based on deterministic time delays.
+* **Objective:** Execute an autonomous, repeatable 5-phase movement pattern based on predetermined time delays.
 
-#### Hardware & Wiring
+#### Components
+* Arduino UNO
+* L293D Motor Driver
+* 2 × DC Gear Motors + Chassis
 
-*Motor driver connections follow the [Genuine Shared Pinout](#genuine-shared-pinout-bluetooth--timer-robots).* No external sensors or wireless modules are required for this project.
+#### Pin Connections
 
-#### Working Principle & Motion Sequence
+*Motor driver connections follow the [Standard Motor Driver Pinout](#standard-motor-driver-pinout) (`ENA=D5, IN1=D8, IN2=D9, ENB=D6, IN3=D10, IN4=D11`). No external sensors are required.*
 
-The robot operates as an open-loop state machine using blocking sequential delays. Locomotion is modularized into two low-level primitives:
-* `moveBot(left1, left2, right1, right2)`: Writes directional logic to `IN1`–`IN4` and asserts full PWM (`255`) on `ENA` and `ENB`.
-* `stopBot()`: Asserts `0` PWM on `ENA` and `ENB`.
+#### Working Principle & Movement Sequence
 
-The main loop continuously repeats the following 25-second routine (5 seconds per phase):
+The robot uses standard time delays (`delay(5000)`) to execute an autonomous sequence in a continuous loop. Each movement phase runs for exactly **5 seconds**:
 
-```mermaid
-flowchart TD
-    Step1["Step 1: Reverse<br>(5.0 seconds)"] --> Step2["Step 2: Forward<br>(5.0 seconds)"]
-    Step2 --> Step3["Step 3: Brake / Stop<br>(5.0 seconds)"]
-    Step3 --> Step4["Step 4: Left Spin Turn<br>(5.0 seconds)"]
-    Step4 --> Step5["Step 5: Right Spin Turn<br>(5.0 seconds)"]
-    Step5 --> Step1
+```
+Step 1: Backward (5s)
+   │
+Step 2: Forward (5s)
+   │
+Step 3: Stop (5s)
+   │
+Step 4: Left Turn (5s)
+   │
+Step 5: Right Turn (5s)
+   │
+(Repeats continuously)
 ```
 
-#### Detailed Phase Breakdown:
-| Step | Phase Name | Duration | Left Motor State | Right Motor State | Kinematic Motion |
+#### Detailed Phase Breakdown
+
+| Step | Movement | Duration | Left Motor (`IN1, IN2`) | Right Motor (`IN3, IN4`) | Motion Description |
 | :---: | :--- | :---: | :--- | :--- | :--- |
-| **1** | Reverse | $5.0\,\text{s}$ | `LOW, HIGH` (Rev) | `LOW, HIGH` (Rev) | Straight reverse translation |
-| **2** | Forward | $5.0\,\text{s}$ | `HIGH, LOW` (Fwd) | `HIGH, LOW` (Fwd) | Straight forward translation |
-| **3** | Neutral Stop | $5.0\,\text{s}$ | `ENA = 0` | `ENB = 0` | Complete motor halt |
-| **4** | Left Point Turn | $5.0\,\text{s}$ | `LOW, HIGH` (Rev) | `HIGH, LOW` (Fwd) | Zero-radius counter-clockwise spin |
-| **5** | Right Point Turn | $5.0\,\text{s}$ | `HIGH, LOW` (Fwd) | `LOW, HIGH` (Rev) | Zero-radius clockwise spin |
-
-> **Steering Distinction:** Unlike the Bluetooth robot (which halts the inner wheel for a pivot turn), the Timer robot drives both wheels in opposite directions simultaneously, producing a **zero-radius point turn (spin turn)** around its geometric center.
+| **1** | Backward | 5 seconds | `LOW, HIGH` (Reverse) | `LOW, HIGH` (Reverse) | Both wheels drive backward |
+| **2** | Forward | 5 seconds | `HIGH, LOW` (Forward) | `HIGH, LOW` (Forward) | Both wheels drive forward |
+| **3** | Stop | 5 seconds | `ENA = 0` | `ENB = 0` | Both motors disabled |
+| **4** | Left Turn | 5 seconds | `LOW, HIGH` (Reverse) | `HIGH, LOW` (Forward) | Wheels turn in opposite directions (spins left) |
+| **5** | Right Turn | 5 seconds | `HIGH, LOW` (Forward) | `LOW, HIGH` (Reverse) | Wheels turn in opposite directions (spins right) |
 
 ---
 
-## Comparative Technical Summary
+## Technologies and Tools Used
 
-| Feature / Metric | Object Following Robot | Bluetooth Controlled Robot | Timer Controlled Robot |
-| :--- | :--- | :--- | :--- |
-| **Source File** | [`object-following-robot.ino`](./Object-Following-Robot/object-following-robot.ino) | [`bluetooth-robot.ino`](./Bluetooth-Controlled-Robot/bluetooth-robot.ino) | [`timer-robot.ino`](./Timer-Controlled-Robot/timer-robot.ino) |
-| **Control Category** | Closed-loop sensor feedback | Teleoperated closed-loop human-in-the-loop | Open-loop deterministic sequence |
-| **Feedback Mechanism** | Ultrasonic time-of-flight | Human observation via Bluetooth serial | None (Dead-reckoning time sequence) |
-| **Microcontroller Pins Used** | D2, D3, D6, D7, D10, D11 | D2, D3, D5, D6, D8, D9, D10, D11 | D5, D6, D8, D9, D10, D11 |
-| **PWM Enable Control** | No (Tied to 5V) | Yes (Pins D5, D6 at `SPEED = 255`) | Yes (Pins D5, D6 at `SPEED = 255`) |
-| **Steering Topology** | None (1D longitudinal only) | Single-wheel differential pivot | Dual-wheel zero-radius spin/point turn |
-
----
-
-## Technologies & Tools Used
-
-* **Microcontroller Platform:** Microchip ATmega328P / Arduino UNO R3 (16 MHz AVR)
-* **Programming Languages:** Embedded C / C++ (Arduino Core)
-* **Communication Protocols:**
-  * **UART (Universal Asynchronous Receiver-Transmitter):** Hardware serial (9600 baud) for diagnostics; SoftwareSerial for HC-05 communication
-  * **SPP (Serial Port Profile):** Bluetooth RFCOMM transport
-* **Power & Driver Electronics:** Texas Instruments L293D Quadruple Half-H Drivers (inductive kickback suppression, dual H-bridge topology)
-* **Sensors:** HC-SR04 Piezoelectric Ultrasonic Transceiver module
-* **Development Tools:** Arduino IDE, Logic Analyzer / Multimeter for signal verification
+* **Hardware:**
+  * Arduino UNO (Microchip ATmega328P microcontroller)
+  * L293D Dual H-Bridge Motor Driver
+  * HC-SR04 Ultrasonic Distance Sensor
+  * HC-05 Bluetooth Module
+  * Dual DC Gear Motors and Chassis Platform
+* **Software:**
+  * Arduino IDE
+  * Embedded C / C++ (Arduino Core)
+  * `SoftwareSerial` Arduino Library
 
 ---
 
-## Engineering Skills Gained
+## Skills Gained
 
-* **Embedded Hardware Interfacing:** Configured discrete GPIOs for H-bridge motor logic, pulse width modulation (PWM), and external sensor handshaking.
-* **Mixed-Voltage Signal Conditioning:** Integrated 3.3V logic transceivers (HC-05) with 5V microcontrollers using resistive attenuation to ensure hardware survivability.
-* **Differential Drive Kinematics:** Implemented both single-wheel pivot steering and zero-radius dual-wheel point turning profiles.
-* **State Management & Control Structures:** Structured serial packet parsing with state variables (`lastDirection`) to maintain context between teleoperation commands.
-* **Acoustic Ranging Physics:** Calculated physical distance from microsecond round-trip sound travel, incorporating noise filtering and failsafe out-of-range bounds.
+* **Microcontroller Interfacing:** Configuring digital I/O pins, pulse width modulation (PWM) motor speed control, and sensor timing.
+* **DC Motor Control:** Implementing bidirectional H-bridge control logic for forward, reverse, pivot, and spin movements.
+* **Signal Level Shifting:** Designing a resistor voltage divider to step down 5V Arduino signals to 3.3V logic for the HC-05 module.
+* **Serial Communication:** Handling UART data transmission between Arduino and Bluetooth modules using `SoftwareSerial`.
+* **State Management:** Tracking robot motion state (`lastDirection`) to coordinate steering and translation.
 
 ---
 
-## Potential Future Enhancements
+## Future Improvements
 
-Technically grounded upgrades to advance these systems to production standards:
-
-1. **Non-Blocking Architecture:** Refactor blocking routines (`delay()` in the Timer robot and `pulseIn()` in the Follower robot) into asynchronous finite-state machines (FSM) utilizing hardware timer interrupts or `millis()` timestamp checking.
-2. **Closed-Loop Speed & Heading Control (PID):**
-   * Integrate wheel encoders with optical disc interrupters to compute real-time RPM.
-   * Implement a proportional-integral-derivative (PID) algorithm to correct motor imbalance and achieve precise linear tracking.
-3. **Continuous Distance Regulation:** Replace the current discrete threshold bands on the Object Follower with a proportional distance controller that dynamically adjusts motor PWM based on error:
-   $$e(t) = d_{\text{target}} - d_{\text{measured}}$$
-4. **Teleoperation Safety Failsafe:** Implement a watchdog heartbeat timer on the Bluetooth robot that triggers an automatic `stopBot()` if no command or keep-alive ping is received within $500\,\text{ms}$.
-5. **Servo-Actuated Sensor Panning:** Mount the HC-SR04 on a micro-servo (e.g., SG90) to enable spatial scanning, dynamic obstacle mapping, and multi-directional tracking.
+* **Firmware Update for Object Follower:** Align `object-following-robot.ino` pin definitions with the physical chassis wiring (`ENA=D5, IN1=D8, IN2=D9, ENB=D6, IN3=D10, IN4=D11`).
+* **Non-Blocking Control:** Refactor `delay()` and `pulseIn()` using `millis()` to allow concurrent task handling.
+* **Encoder Feedback:** Add wheel encoders for closed-loop speed measurement and straight-line correction.
+* **Proportional Speed Control:** Dynamically adjust motor PWM based on distance to object rather than fixed on/off thresholds.
+* **Bluetooth Failsafe:** Implement an automatic stop timeout if no Bluetooth packet is received within a set period.
